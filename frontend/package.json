@@ -19,7 +19,7 @@
     "leaflet": "^1.9.4",
     "react-leaflet": "^4.2.1",
     "lucide-react": "^0.395.0",
-    "recharts": "^2.12.7",
+    "recharts": "^3.8.1",
     "framer-motion": "^11.2.12"
   },
   "devDependencies": {
