@@ -1,0 +1,78 @@
+// Prisma Schema for AegisOps
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
+
+enum Role {
+  admin
+  analyst
+  viewer
+}
+
+enum ReportStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+// ─────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(viewer)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports   Report[]
+  decisions Decision[]
+
+  @@map("users")
+}
+
+model Report {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  status      ReportStatus @default(pending)
+  category    String?
+  location    String?
+  severity    Float?
+  frequency   Float?
+  recency     Float?
+  fileUrl     String?      // URL CloudFront untuk foto laporan (via S3)
+  createdById String
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("reports")
+}
+
+model Decision {
+  id          String   @id @default(uuid())
+  input       Json
+  output      Json
+  confidence  Float?
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("decisions")
+}

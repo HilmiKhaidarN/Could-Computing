@@ -1,0 +1,31 @@
+# ── Node ──────────────────────────────────────
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Next.js build output ──────────────────────
+.next/
+out/
+
+# ── Test & coverage ───────────────────────────
+coverage/
+**/*.spec.ts
+**/*.test.ts
+
+# ── Dev tooling ───────────────────────────────
+.eslintrc*
+.prettierrc*
+
+# ── Environment ───────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── OS / Editor ───────────────────────────────
+.DS_Store
+.git
+.gitignore
+*.md
+.vscode/
+.idea/

@@ -1,0 +1,41 @@
+# ── Python cache ──────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ──────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Trained model artefacts (rebuilt at runtime) ──
+model/trained_model.pkl
+model/scaler.pkl
+
+# ── Test & coverage ───────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+**/*_test.py
+**/test_*.py
+
+# ── Dev tooling ───────────────────────────────
+.mypy_cache/
+.ruff_cache/
+
+# ── Environment ───────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── OS / Editor ───────────────────────────────
+.DS_Store
+.git
+.gitignore
+*.md
+.vscode/
+.idea/

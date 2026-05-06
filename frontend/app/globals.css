@@ -1,0 +1,294 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet CSS — must be before other styles */
+@import 'leaflet/dist/leaflet.css';
+
+/* ─── Base ──────────────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter',
+      system-ui, sans-serif;
+    color: #1d1d1f;
+    background: #ffffff;
+  }
+
+  /* ── Leaflet overrides ─────────────────────────────────────────────────────── */
+  .leaflet-container {
+    font-family: inherit;
+    border-radius: 1rem;
+  }
+
+  .leaflet-popup-content-wrapper {
+    border-radius: 14px !important;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.14) !important;
+    border: 1px solid rgba(229, 229, 234, 0.8);
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  .leaflet-popup-content {
+    margin: 0 !important;
+    width: auto !important;
+  }
+
+  .leaflet-popup-tip-container {
+    display: none;
+  }
+
+  .leaflet-control-zoom {
+    border: none !important;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    margin: 12px !important;
+  }
+
+  .leaflet-control-zoom a {
+    border: none !important;
+    color: #1d1d1f !important;
+    font-size: 16px !important;
+    line-height: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+    transition: background 0.15s ease !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: #f5f5f7 !important;
+    color: #0071e3 !important;
+  }
+
+  /* Leaflet tooltip — dark glass */
+  .aegisops-tooltip {
+    background: rgba(29, 29, 31, 0.88) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 5px 10px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+    white-space: nowrap !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  .aegisops-tooltip::before {
+    display: none !important;
+  }
+
+  /* Leaflet circle pulse animation */
+  .leaflet-pane .pulse-circle {
+    animation: mapPulse 2s ease-out infinite;
+  }
+}
+
+/* ─── Components ────────────────────────────────────────────────────────────── */
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-primary text-white font-medium rounded-xl
+           transition-all duration-200
+           hover:bg-primary-600 hover:shadow-apple hover:-translate-y-px
+           active:scale-95 active:translate-y-0
+           shadow-sm;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-white text-text-primary font-medium rounded-xl
+           border border-surface-border
+           transition-all duration-200
+           hover:bg-surface hover:border-primary/30 hover:-translate-y-px
+           active:scale-95 active:translate-y-0;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white rounded-2xl border border-surface-border shadow-card;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200
+           hover:shadow-apple-md hover:-translate-y-0.5 hover:border-primary/10;
+  }
+
+  /* Input */
+  .input-field {
+    @apply w-full px-4 py-3 bg-surface rounded-xl border border-surface-border
+           text-text-primary placeholder:text-text-tertiary
+           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+           transition-all duration-200;
+  }
+
+  /* Badges */
+  .badge-urgent {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full
+           text-xs font-semibold bg-red-50 text-red-600;
+  }
+
+  .badge-medium {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full
+           text-xs font-semibold bg-orange-50 text-orange-600;
+  }
+
+  .badge-low {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full
+           text-xs font-semibold bg-green-50 text-green-600;
+  }
+
+  /* AI badge */
+  .badge-ai {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
+           text-[10px] font-bold
+           bg-gradient-to-r from-accent-purple/15 to-primary/15
+           text-accent-purple border border-accent-purple/20;
+  }
+
+  /* Sidebar */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl
+           text-text-secondary font-medium
+           transition-all duration-200
+           hover:bg-surface hover:text-text-primary cursor-pointer;
+  }
+
+  .sidebar-item-active {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl
+           text-primary font-medium bg-primary/8 cursor-pointer;
+  }
+
+  /* Page header — subtle gradient underline */
+  .page-header {
+    @apply px-6 py-4 bg-white border-b border-surface-border flex-shrink-0
+           relative overflow-hidden;
+  }
+
+  .page-header::after {
+    content: '';
+    @apply absolute bottom-0 left-0 right-0 h-px;
+    background: linear-gradient(90deg, #0071e3 0%, #6366f1 50%, transparent 100%);
+    opacity: 0.3;
+  }
+}
+
+/* ─── Utilities ─────────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, #0071e3 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Glass effects */
+  .glass {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .glass-dark {
+    background: rgba(29, 29, 31, 0.82);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  /* Scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Gradient accent */
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  }
+
+  /* AI thinking shimmer */
+  .ai-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(99, 102, 241, 0.08) 0%,
+      rgba(139, 92, 246, 0.15) 50%,
+      rgba(99, 102, 241, 0.08) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  /* Stagger children fade-in */
+  .stagger-children > * {
+    animation: fadeInUp 0.4s ease-out both;
+  }
+
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+}
+
+/* ─── Keyframes ─────────────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mapPulse {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  70%  { transform: scale(2.5); opacity: 0; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ─── Tailwind animation classes ────────────────────────────────────────────── */
+.animate-fade-in       { animation: fadeIn 0.45s ease-out both; }
+.animate-slide-up      { animation: slideUp 0.45s ease-out both; }
+.animate-slide-in-right { animation: slideInRight 0.3s ease-out both; }
+.animate-shimmer       { animation: shimmer 2s ease-in-out infinite; }
