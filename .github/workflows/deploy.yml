@@ -132,7 +132,7 @@ jobs:
 
       # ── Backend ──
       - name: Build & push backend
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context:    ./backend
           file:       ./docker/backend.Dockerfile
@@ -143,7 +143,7 @@ jobs:
 
       # ── Frontend ──
       - name: Build & push frontend
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context:    ./frontend
           file:       ./docker/frontend.Dockerfile
@@ -157,7 +157,7 @@ jobs:
 
       # ── ML Service ──
       - name: Build & push ml-service
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context:    ./ml-service
           file:       ./docker/ml.Dockerfile
