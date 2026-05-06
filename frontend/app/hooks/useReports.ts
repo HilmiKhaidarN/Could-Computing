@@ -4,36 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchReports } from '@/app/services/reports.service';
 import type { ApiReport, DashboardStats, Priority } from '@/app/lib/types';
 
-// ─── Fallback data (digunakan jika API tidak tersedia) ────────────────────────
-import { reports as DUMMY_REPORTS } from '@/app/lib/data';
+// ─── No fallback data - all data from backend API ──────────────────────────────
 
-function dummyToApiReport(r: (typeof DUMMY_REPORTS)[0]): ApiReport {
-  return {
-    id: r.id,
-    title: r.title,
-    description: r.description,
-    status: r.status,
-    createdAt: r.date,
-    updatedAt: r.date,
-    createdBy: { id: '0', name: r.reporter, email: '' },
-    category: r.category,
-    location: r.location,
-    lat: r.lat,
-    lng: r.lng,
-    reporter: r.reporter,
-    date: r.date,
-    image: r.image,
-    predictedPriority: r.score?.total ?? 5,
-    aiScore: r.score?.total ?? 5,
-    priorityLabel: r.priority,
-    scoreSource: 'rule-based',
-    severity: r.score?.severity,
-    frequency: r.score?.frequency,
-    recency: r.score?.recency,
-  };
-}
-
-const FALLBACK_REPORTS: ApiReport[] = DUMMY_REPORTS.map(dummyToApiReport);
+const FALLBACK_REPORTS: ApiReport[] = [];
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -62,9 +35,9 @@ export function useReports(): UseReportsReturn {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Gagal memuat data laporan';
       setError(msg);
-      // Fallback ke dummy data agar UI tetap berfungsi
-      setReports(FALLBACK_REPORTS);
-      setIsUsingFallback(true);
+      // No fallback - show empty state
+      setReports([]);
+      setIsUsingFallback(false);
     } finally {
       setIsLoading(false);
     }

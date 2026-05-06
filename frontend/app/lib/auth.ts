@@ -10,26 +10,17 @@ export interface AuthUser {
 
 const SESSION_KEY = 'aegisops_user';
 
-// ─── Dummy users ──────────────────────────────────────────────────────────────
+// ─── No dummy users - use real backend authentication ─────────────────────────
 
-export const DUMMY_USERS: Record<string, { password: string; user: AuthUser }> = {
-  'admin@aegisops.id': {
-    password: 'admin123',
-    user: { id: '1', name: 'Admin User', email: 'admin@aegisops.id', role: 'admin' },
-  },
-  'supervisor@aegisops.id': {
-    password: 'super123',
-    user: { id: '2', name: 'Supervisor Kota', email: 'supervisor@aegisops.id', role: 'supervisor' },
-  },
-  'user@aegisops.id': {
-    password: 'user123',
-    user: { id: '3', name: 'Warga Bandung', email: 'user@aegisops.id', role: 'user' },
-  },
-};
+// For development/testing only - remove in production
+export const DUMMY_USERS: Record<string, { password: string; user: AuthUser }> = {};
 
 // ─── Core auth functions ───────────────────────────────────────────────────────
 
 export function login(email: string, password: string): AuthUser | null {
+  // TODO: Replace with real API call to backend
+  // const response = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+  
   const entry = DUMMY_USERS[email];
   if (!entry || entry.password !== password) return null;
   return entry.user;
