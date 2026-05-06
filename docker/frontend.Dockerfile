@@ -5,7 +5,7 @@
 # =============================================================================
 
 # ─── Stage 1: Dependencies ────────────────────────────────────────────────────
-FROM node:18-alpine AS deps
+FROM node:26-alpine AS deps
 
 RUN apk add --no-cache libc6-compat
 
@@ -15,7 +15,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci --ignore-scripts
 
 # ─── Stage 2: Build ───────────────────────────────────────────────────────────
-FROM node:18-alpine AS builder
+FROM node:26-alpine AS builder
 
 RUN apk add --no-cache libc6-compat
 
@@ -33,7 +33,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
 RUN npm run build
 
 # ─── Stage 3: Production runner ───────────────────────────────────────────────
-FROM node:18-alpine AS runner
+FROM node:26-alpine AS runner
 
 RUN apk add --no-cache libc6-compat dumb-init
 
