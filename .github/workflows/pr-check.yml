@@ -1,8 +1,10 @@
-name: Pull Request Checks
+name: PR Checks (Disabled - Use ci.yml instead)
+
+# This workflow is disabled in favor of ci.yml
+# Delete this file if not needed
 
 on:
-  pull_request:
-    branches: [main, develop]
+  workflow_dispatch:  # Manual trigger only
 
 jobs:
   # ── Lint & Format Check ──────────────────────────────────────────────────────
