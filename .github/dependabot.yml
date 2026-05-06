@@ -1,5 +1,9 @@
 version: 2
-updates:
+
+# Dependabot is temporarily disabled
+# Enable when ready for automated dependency updates
+
+# updates:
   # Backend dependencies
   - package-ecosystem: "npm"
     directory: "/backend"
