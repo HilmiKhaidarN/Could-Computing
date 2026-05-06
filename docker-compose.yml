@@ -1,5 +1,3 @@
-version: "3.9"
-
 # =============================================================================
 # AegisOps — Docker Compose
 # Local development & staging. Production uses AWS ECS task definitions.
@@ -36,7 +34,7 @@ services:
     image: aegisops-backend:local
     container_name: aegisops-backend
     restart: unless-stopped
-    env_file: ../.env
+    env_file: .env
     environment:
       NODE_ENV:     production
       PORT:         3000

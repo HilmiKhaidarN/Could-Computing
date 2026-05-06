@@ -15,7 +15,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install ALL dependencies (dev + prod) needed for build
-RUN npm ci --ignore-scripts
+RUN npm install --legacy-peer-deps
 
 # ─── Stage 2: Build ───────────────────────────────────────────────────────────
 FROM node:18-alpine AS builder
@@ -52,7 +52,7 @@ ENV NODE_ENV=production \
 
 # Install only production dependencies
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Copy compiled output and Prisma schema
 COPY --from=builder /app/dist    ./dist
