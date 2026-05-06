@@ -4,7 +4,7 @@
 # =============================================================================
 
 # ─── Stage 1: Build / install dependencies ────────────────────────────────────
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 # Install build tools needed for numpy/scikit-learn compilation
 RUN apt-get update \
@@ -23,7 +23,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ─── Stage 2: Production runner ───────────────────────────────────────────────
-FROM python:3.11-slim AS runner
+FROM python:3.14-slim AS runner
 
 # Runtime-only system libs (no build tools)
 RUN apt-get update \
