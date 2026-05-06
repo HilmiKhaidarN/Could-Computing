@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/app/hooks/useAuth';
+import { useReports } from '@/app/hooks/useReports';
 import { ROLE_LABELS, ROLE_COLORS } from '@/app/lib/auth';
 import type { UserRole } from '@/app/lib/auth';
 
@@ -24,7 +25,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
-  badge?: number;
+  badgeKey?: 'urgent' | 'pending'; // Dynamic badge from reports data
 }
 
 const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
@@ -36,13 +37,13 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   ],
   admin: [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/reports', label: 'Laporan', icon: FileText, badge: 3 },
+    { href: '/reports', label: 'Laporan', icon: FileText, badgeKey: 'urgent' },
     { href: '/reports/manage', label: 'Kelola Laporan', icon: ClipboardList },
     { href: '/profile', label: 'Profil', icon: User },
   ],
   supervisor: [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/reports', label: 'Semua Laporan', icon: FileText },
+    { href: '/reports', label: 'Semua Laporan', icon: FileText, badgeKey: 'urgent' },
     { href: '/analytics', label: 'Analitik', icon: BarChart3 },
     { href: '/decision', label: 'Decision Insight', icon: Brain },
     { href: '/profile', label: 'Profil', icon: User },
@@ -52,9 +53,16 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { stats } = useReports();
 
   const role = user?.role ?? 'user';
   const navItems = NAV_BY_ROLE[role];
+
+  // Calculate badge counts from real data
+  const badgeCounts = {
+    urgent: stats.urgentCount,
+    pending: stats.totalReports - stats.completedCount,
+  };
 
   return (
     <aside className="w-60 h-screen bg-white border-r border-surface-border flex flex-col fixed left-0 top-0 z-30">
@@ -77,8 +85,10 @@ export function Sidebar() {
           Menu Utama
         </p>
 
-        {navItems.map(({ href, label, icon: Icon, badge }) => {
+        {navItems.map(({ href, label, icon: Icon, badgeKey }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+          const badgeCount = badgeKey ? badgeCounts[badgeKey] : undefined;
+          
           return (
             <Link
               key={href}
@@ -92,12 +102,12 @@ export function Sidebar() {
             >
               <Icon size={18} className="flex-shrink-0" />
               <span className="flex-1">{label}</span>
-              {badge !== undefined && (
+              {badgeCount !== undefined && badgeCount > 0 && (
                 <span
                   className="flex items-center justify-center rounded-full bg-red-500 text-white font-bold"
                   style={{ width: 18, height: 18, fontSize: 10 }}
                 >
-                  {badge}
+                  {badgeCount}
                 </span>
               )}
             </Link>

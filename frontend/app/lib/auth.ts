@@ -6,38 +6,38 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   avatar?: string;
+  token?: string; // JWT token from backend
 }
 
 const SESSION_KEY = 'aegisops_user';
 
 // ─── No dummy users - use real backend authentication ─────────────────────────
 
-// For development/testing only - remove in production
-export const DUMMY_USERS: Record<string, { password: string; user: AuthUser }> = {};
-
-// ─── Core auth functions ───────────────────────────────────────────────────────
-
 export function login(email: string, password: string): AuthUser | null {
-  // TODO: Replace with real API call to backend
-  // const response = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-  
-  const entry = DUMMY_USERS[email];
-  if (!entry || entry.password !== password) return null;
-  return entry.user;
+  // This function is deprecated - use apiClient.login() instead
+  console.warn('Direct login() is deprecated. Use apiClient.login() from lib/api.ts');
+  return null;
 }
 
 export function saveSession(user: AuthUser): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  console.log('✅ Session saved:', user);
 }
 
 export function getSession(): AuthUser | null {
   if (typeof window === 'undefined') return null;
   const raw = localStorage.getItem(SESSION_KEY);
-  if (!raw) return null;
+  if (!raw) {
+    console.log('❌ No session found in localStorage');
+    return null;
+  }
   try {
-    return JSON.parse(raw) as AuthUser;
+    const user = JSON.parse(raw) as AuthUser;
+    console.log('✅ Session loaded:', user);
+    return user;
   } catch {
+    console.log('❌ Failed to parse session');
     return null;
   }
 }

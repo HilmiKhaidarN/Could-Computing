@@ -6,6 +6,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { DecisionModule } from './modules/decision/decision.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -17,5 +18,6 @@ import { PrismaModule } from './common/prisma/prisma.module';
     DecisionModule,
     AnalyticsModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

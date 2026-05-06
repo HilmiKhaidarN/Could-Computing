@@ -15,11 +15,14 @@ import {
   X,
   Filter,
 } from 'lucide-react';
-import { reports as initialReports, type Report, type ReportStatus, type Priority } from '@/app/lib/data';
 import { PriorityBadge, StatusBadge } from '@/app/components/ui/Badge';
 import { useAuth } from '@/app/hooks/useAuth';
+import { useReports } from '@/app/hooks/useReports';
+import type { ApiReport } from '@/app/lib/types';
 
 const ALL = 'Semua' as const;
+type ReportStatus = ApiReport['status'];
+type Priority = ApiReport['priorityLabel'];
 
 interface StatusAction {
   value: ReportStatus;
@@ -29,24 +32,24 @@ interface StatusAction {
 }
 
 const STATUS_ACTIONS: StatusAction[] = [
-  { value: 'proses', label: 'Proses', icon: Clock, className: 'text-blue-600 hover:bg-blue-50' },
-  { value: 'selesai', label: 'Selesai', icon: CheckCircle, className: 'text-green-600 hover:bg-green-50' },
-  { value: 'ditolak', label: 'Tolak', icon: XCircle, className: 'text-red-500 hover:bg-red-50' },
+  { value: 'processing', label: 'Proses', icon: Clock, className: 'text-blue-600 hover:bg-blue-50' },
+  { value: 'completed', label: 'Selesai', icon: CheckCircle, className: 'text-green-600 hover:bg-green-50' },
+  { value: 'failed', label: 'Tolak', icon: XCircle, className: 'text-red-500 hover:bg-red-50' },
 ];
 
 interface EditModalProps {
-  report: Report;
-  onSave: (updated: Report) => void;
+  report: ApiReport;
+  onSave: (updated: Partial<ApiReport>) => void;
   onClose: () => void;
 }
 
 function EditModal({ report, onSave, onClose }: EditModalProps) {
   const [title, setTitle] = useState(report.title);
-  const [description, setDescription] = useState(report.description);
-  const [location, setLocation] = useState(report.location);
+  const [description, setDescription] = useState(report.description || '');
+  const [location, setLocation] = useState(report.location || '');
 
   const handleSave = () => {
-    onSave({ ...report, title, description, location });
+    onSave({ title, description, location });
   };
 
   return (
@@ -90,20 +93,20 @@ function EditModal({ report, onSave, onClose }: EditModalProps) {
 
 export default function ManageReportsPage() {
   const router = useRouter();
-  const { can, isLoading } = useAuth();
+  const { can, isLoading: authLoading } = useAuth();
+  const { reports: reportList, isLoading } = useReports();
 
-  const [reportList, setReportList] = useState<Report[]>(initialReports);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<ReportStatus | typeof ALL>(ALL);
   const [filterPriority, setFilterPriority] = useState<Priority | typeof ALL>(ALL);
-  const [editingReport, setEditingReport] = useState<Report | null>(null);
+  const [editingReport, setEditingReport] = useState<ApiReport | null>(null);
 
   // Role guard
   useEffect(() => {
-    if (!isLoading && !can('editReport')) {
+    if (!authLoading && !can('editReport')) {
       router.replace('/dashboard');
     }
-  }, [isLoading, can, router]);
+  }, [authLoading, can, router]);
 
   const filtered = useMemo(() => {
     return reportList.filter((r) => {
@@ -111,29 +114,33 @@ export default function ManageReportsPage() {
       const matchSearch =
         q === '' ||
         r.title.toLowerCase().includes(q) ||
-        r.location.toLowerCase().includes(q) ||
+        (r.location && r.location.toLowerCase().includes(q)) ||
         r.id.toLowerCase().includes(q);
       const matchStatus = filterStatus === ALL || r.status === filterStatus;
-      const matchPriority = filterPriority === ALL || r.priority === filterPriority;
+      const matchPriority = filterPriority === ALL || r.priorityLabel === filterPriority;
       return matchSearch && matchStatus && matchPriority;
     });
   }, [reportList, search, filterStatus, filterPriority]);
 
   const handleStatusUpdate = (id: string, status: ReportStatus) => {
-    setReportList((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    // TODO: Call backend API to update status
+    console.log('Update status:', id, status);
+    alert(`Status update untuk ${id} → ${status} (belum terimplementasi di backend)`);
   };
 
-  const handleEdit = (updated: Report) => {
-    setReportList((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+  const handleEdit = (updated: Partial<ApiReport>) => {
+    // TODO: Call backend API to update report
+    console.log('Update report:', editingReport?.id, updated);
+    alert(`Edit laporan ${editingReport?.id} (belum terimplementasi di backend)`);
     setEditingReport(null);
   };
 
   // Stats
   const pendingCount = reportList.filter((r) => r.status === 'pending').length;
-  const prosesCount = reportList.filter((r) => r.status === 'proses').length;
-  const selesaiCount = reportList.filter((r) => r.status === 'selesai').length;
+  const prosesCount = reportList.filter((r) => r.status === 'processing').length;
+  const selesaiCount = reportList.filter((r) => r.status === 'completed').length;
 
-  if (isLoading) return null;
+  if (authLoading || isLoading) return null;
   if (!can('editReport')) return null;
 
   return (
@@ -197,9 +204,9 @@ export default function ManageReportsPage() {
                 >
                   <option value={ALL}>Semua Status</option>
                   <option value="pending">Pending</option>
-                  <option value="proses">Diproses</option>
-                  <option value="selesai">Selesai</option>
-                  <option value="ditolak">Ditolak</option>
+                  <option value="processing">Diproses</option>
+                  <option value="completed">Selesai</option>
+                  <option value="failed">Ditolak</option>
                 </select>
                 <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
               </div>
@@ -236,17 +243,17 @@ export default function ManageReportsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       <span className="text-[10px] font-mono text-text-tertiary">{report.id}</span>
-                      <PriorityBadge priority={report.priority} />
+                      <PriorityBadge priority={report.priorityLabel} />
                       <StatusBadge status={report.status} />
                     </div>
                     <h3 className="text-sm font-bold text-text-primary mb-1">{report.title}</h3>
-                    <p className="text-xs text-text-secondary line-clamp-2 mb-2">{report.description}</p>
+                    <p className="text-xs text-text-secondary line-clamp-2 mb-2">{report.description || 'Tidak ada deskripsi'}</p>
                     <div className="flex items-center gap-4 text-[11px] text-text-tertiary">
                       <span className="flex items-center gap-1">
-                        <MapPin size={11} /> {report.location}
+                        <MapPin size={11} /> {report.location || 'Tidak ada lokasi'}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Calendar size={11} /> {report.date}
+                        <Calendar size={11} /> {new Date(report.createdAt).toLocaleDateString('id-ID')}
                       </span>
                     </div>
                   </div>
@@ -262,7 +269,7 @@ export default function ManageReportsPage() {
                     </button>
 
                     {/* Status actions */}
-                    {report.status !== 'selesai' && (
+                    {report.status !== 'completed' && (
                       <div className="flex flex-col gap-1">
                         {STATUS_ACTIONS.filter((a) => a.value !== report.status).map(
                           ({ value, label, icon: Icon, className }) => (

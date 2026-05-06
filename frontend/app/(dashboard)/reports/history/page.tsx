@@ -3,28 +3,28 @@
 import { useState } from 'react';
 import { MapPin, Calendar, Search, Plus, Eye } from 'lucide-react';
 import Link from 'next/link';
-import { reports } from '@/app/lib/data';
 import { useAuth } from '@/app/hooks/useAuth';
+import { useReports } from '@/app/hooks/useReports';
 import { PriorityBadge, StatusBadge } from '@/app/components/ui/Badge';
-import type { Report } from '@/app/lib/data';
+import type { ApiReport } from '@/app/lib/types';
 
 // Simulate: user "Warga Bandung" (id: '3') owns RPT-001, RPT-003, RPT-005
-const MY_REPORT_IDS = ['RPT-001', 'RPT-003', 'RPT-005'];
+// Now using real data from backend filtered by current user
 
-const STATUS_STEPS = ['pending', 'proses', 'selesai'] as const;
+const STATUS_STEPS = ['pending', 'processing', 'completed'] as const;
 const STATUS_STEP_LABELS: Record<string, string> = {
   pending: 'Diterima',
-  proses: 'Diproses',
-  selesai: 'Selesai',
-  ditolak: 'Ditolak',
+  processing: 'Diproses',
+  completed: 'Selesai',
+  failed: 'Ditolak',
 };
 
 interface ProgressTrackerProps {
-  status: Report['status'];
+  status: ApiReport['status'];
 }
 
 function ProgressTracker({ status }: ProgressTrackerProps) {
-  if (status === 'ditolak') {
+  if (status === 'failed') {
     return (
       <div className="flex items-center gap-2 mt-3">
         <span className="text-[10px] font-semibold text-red-500 bg-red-50 px-2.5 py-1 rounded-full">
@@ -79,17 +79,19 @@ function ProgressTracker({ status }: ProgressTrackerProps) {
 
 export default function ReportHistoryPage() {
   const { user } = useAuth();
+  const { reports, isLoading } = useReports();
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<Report | null>(null);
+  const [selected, setSelected] = useState<ApiReport | null>(null);
 
-  const myReports = reports.filter((r) => MY_REPORT_IDS.includes(r.id));
+  // Filter reports by current user (createdById)
+  const myReports = reports.filter((r) => r.createdById === user?.id);
 
   const filtered = myReports.filter((r) => {
     const q = search.toLowerCase();
     return (
       q === '' ||
       r.title.toLowerCase().includes(q) ||
-      r.location.toLowerCase().includes(q) ||
+      (r.location && r.location.toLowerCase().includes(q)) ||
       r.id.toLowerCase().includes(q)
     );
   });
@@ -113,16 +115,22 @@ export default function ReportHistoryPage() {
       <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-5">
         {/* Summary cards */}
         <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Total Laporan', value: myReports.length, color: 'text-primary', bg: 'bg-primary/10' },
-            { label: 'Sedang Diproses', value: myReports.filter((r) => r.status === 'proses').length, color: 'text-orange-500', bg: 'bg-orange-50' },
-            { label: 'Selesai', value: myReports.filter((r) => r.status === 'selesai').length, color: 'text-green-600', bg: 'bg-green-50' },
-          ].map(({ label, value, color, bg }) => (
-            <div key={label} className="card p-4 text-center hover:shadow-apple-md transition-all duration-200">
-              <p className={`text-2xl font-bold ${color}`}>{value}</p>
-              <p className="text-xs text-text-secondary mt-1">{label}</p>
-            </div>
-          ))}
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="card p-4 h-20 animate-pulse bg-surface" />
+            ))
+          ) : (
+            [
+              { label: 'Total Laporan', value: myReports.length, color: 'text-primary', bg: 'bg-primary/10' },
+              { label: 'Sedang Diproses', value: myReports.filter((r) => r.status === 'processing').length, color: 'text-orange-500', bg: 'bg-orange-50' },
+              { label: 'Selesai', value: myReports.filter((r) => r.status === 'completed').length, color: 'text-green-600', bg: 'bg-green-50' },
+            ].map(({ label, value, color, bg }) => (
+              <div key={label} className="card p-4 text-center hover:shadow-apple-md transition-all duration-200">
+                <p className={`text-2xl font-bold ${color}`}>{value}</p>
+                <p className="text-xs text-text-secondary mt-1">{label}</p>
+              </div>
+            ))
+          )}
         </div>
 
         {/* Search */}
@@ -138,7 +146,13 @@ export default function ReportHistoryPage() {
         </div>
 
         {/* Report cards */}
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="card p-5 h-32 animate-pulse bg-surface" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="card p-12 text-center">
             <div className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4">
               <Search size={20} className="text-text-tertiary" />
@@ -176,10 +190,10 @@ export default function ReportHistoryPage() {
                 {/* Meta */}
                 <div className="flex items-center gap-4 text-[11px] text-text-tertiary mb-1">
                   <span className="flex items-center gap-1">
-                    <MapPin size={11} /> {report.location}
+                    <MapPin size={11} /> {report.location || 'Tidak ada lokasi'}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Calendar size={11} /> {report.date}
+                    <Calendar size={11} /> {new Date(report.createdAt).toLocaleDateString('id-ID')}
                   </span>
                 </div>
 
@@ -190,18 +204,18 @@ export default function ReportHistoryPage() {
                 {selected?.id === report.id && (
                   <div className="mt-4 pt-4 border-t border-surface-border animate-fade-in">
                     <p className="text-xs text-text-secondary leading-relaxed mb-3">
-                      {report.description}
+                      {report.description || 'Tidak ada deskripsi'}
                     </p>
-                    {report.image && (
+                    {report.fileUrl && (
                       <img
-                        src={report.image}
+                        src={report.fileUrl}
                         alt={report.title}
                         className="w-full h-36 object-cover rounded-xl mb-3"
                       />
                     )}
                     <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
                       <span className="font-semibold text-text-secondary">Kategori:</span>
-                      {report.category}
+                      {report.category || 'Tidak ada kategori'}
                     </div>
                     <div className="mt-3 flex gap-2">
                       <button className="btn-secondary text-xs py-2 px-3 gap-1.5">

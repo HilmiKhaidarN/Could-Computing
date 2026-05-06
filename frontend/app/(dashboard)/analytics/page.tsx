@@ -7,7 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { TrendingUp, TrendingDown, Award, BarChart3, Brain, AlertTriangle } from 'lucide-react';
-import { monthlyData, CATEGORY_COLORS } from '@/app/lib/data';
+import { CATEGORY_COLORS } from '@/app/lib/data';
 import { useAuth } from '@/app/hooks/useAuth';
 import { useReports } from '@/app/hooks/useReports';
 import { ErrorBanner } from '@/app/components/ui/ErrorBanner';
@@ -37,13 +37,7 @@ export default function AnalyticsPage() {
   const { can, isLoading: authLoading } = useAuth();
   const { reports, isLoading, isUsingFallback, refresh, stats } = useReports();
 
-  useEffect(() => {
-    if (!authLoading && !can('viewAnalytics')) router.replace('/dashboard');
-  }, [authLoading, can, router]);
-
-  if (authLoading) return null;
-  if (!can('viewAnalytics')) return null;
-
+  // Calculate all derived data BEFORE any early returns
   const completionRate = stats.totalReports > 0
     ? Math.round((stats.completedCount / stats.totalReports) * 100)
     : 0;
@@ -80,6 +74,35 @@ export default function AnalyticsPage() {
     [reports],
   );
 
+  // Priority distribution dari data real
+  const priorityDist = useMemo(() => {
+    const counts = reports.reduce<Record<string, number>>((acc, r) => {
+      const priority = r.priorityLabel || 'unknown';
+      acc[priority] = (acc[priority] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const priorityOrder = ['urgent', 'medium', 'low'];
+    const priorityColors: Record<string, string> = {
+      urgent: '#FF3B30',
+      medium: '#FF9500',
+      low: '#34C759',
+    };
+    const priorityLabels: Record<string, string> = {
+      urgent: 'Urgent',
+      medium: 'Medium',
+      low: 'Rendah',
+    };
+
+    return priorityOrder
+      .filter(p => counts[p] > 0)
+      .map(priority => ({
+        name: priorityLabels[priority] || priority,
+        value: counts[priority] || 0,
+        color: priorityColors[priority] || '#AEAEB2',
+      }));
+  }, [reports]);
+
   // AI insights dari data real
   const topCategory = categoryDist[0];
   const urgentPct = stats.totalReports > 0
@@ -108,6 +131,15 @@ export default function AnalyticsPage() {
       color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-100',
     },
   ];
+
+  // Check auth AFTER all hooks
+  useEffect(() => {
+    if (!authLoading && !can('viewAnalytics')) router.replace('/dashboard');
+  }, [authLoading, can, router]);
+
+  // Early returns AFTER all hooks
+  if (authLoading) return null;
+  if (!can('viewAnalytics')) return null;
 
   return (
     <div className="h-full flex flex-col">
@@ -201,40 +233,47 @@ export default function AnalyticsPage() {
           <div className="xl:col-span-2 card p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-sm font-bold text-text-primary">Tren Laporan per Bulan</h3>
-                <p className="text-xs text-text-tertiary mt-0.5">Data historis (referensi)</p>
+                <h3 className="text-sm font-bold text-text-primary">Distribusi Prioritas Laporan</h3>
+                <p className="text-xs text-text-tertiary mt-0.5">
+                  {isLoading ? 'Memuat...' : `Dari ${stats.totalReports} laporan aktual`}
+                </p>
               </div>
               <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-1.5 rounded-full bg-primary inline-block" />
-                  <span className="text-text-secondary">Masuk</span>
+                  <span className="w-3 h-1.5 rounded-full bg-red-500 inline-block" />
+                  <span className="text-text-secondary">Urgent</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-1.5 rounded-full bg-orange-400 inline-block" />
+                  <span className="text-text-secondary">Medium</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-1.5 rounded-full bg-green-500 inline-block" />
-                  <span className="text-text-secondary">Selesai</span>
+                  <span className="text-text-secondary">Rendah</span>
                 </div>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={monthlyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorLaporan" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0071E3" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#0071E3" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorSelesai" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#34C759" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#34C759" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F5F5F7" />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#AEAEB2' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#AEAEB2' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="laporan" name="Masuk" stroke="#0071E3" strokeWidth={2} fill="url(#colorLaporan)" />
-                <Area type="monotone" dataKey="selesai" name="Selesai" stroke="#34C759" strokeWidth={2} fill="url(#colorSelesai)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="h-[220px] bg-surface rounded-xl animate-pulse" />
+            ) : priorityDist.length === 0 ? (
+              <div className="h-[220px] flex items-center justify-center">
+                <p className="text-sm text-text-tertiary">Belum ada data laporan</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={priorityDist} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} barSize={60}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F5F5F7" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#AEAEB2' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#AEAEB2' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="value" name="Jumlah Laporan" radius={[8, 8, 0, 0]}>
+                    {priorityDist.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           {/* Pie chart — dari data real */}

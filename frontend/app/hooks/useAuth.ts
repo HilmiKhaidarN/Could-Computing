@@ -23,8 +23,22 @@ export function useAuth(): UseAuthReturn {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setUser(getSession());
+    const session = getSession();
+    console.log('useAuth: Checking session...', session);
+    setUser(session);
     setIsLoading(false);
+  }, []);
+
+  // Listen for storage changes (when login happens in same tab)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const session = getSession();
+      console.log('useAuth: Storage changed, updating user...', session);
+      setUser(session);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const logout = useCallback(() => {

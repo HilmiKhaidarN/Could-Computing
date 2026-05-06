@@ -56,3 +56,10 @@ prisma/migrations/**/migration.sql
 .cache/
 temp/
 tmp/
+
+# AWS Setup Scripts (local only)
+aws-setup/
+
+# Local Development Scripts
+start-dev.ps1
+stop-dev.ps1

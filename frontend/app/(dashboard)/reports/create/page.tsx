@@ -103,7 +103,17 @@ export default function CreateReportPage() {
 
   const getToken = (): string | null => {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('token') ?? sessionStorage.getItem('token');
+    // Get token from aegisops_user session
+    const sessionRaw = localStorage.getItem('aegisops_user');
+    if (sessionRaw) {
+      try {
+        const session = JSON.parse(sessionRaw);
+        return session.token || null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

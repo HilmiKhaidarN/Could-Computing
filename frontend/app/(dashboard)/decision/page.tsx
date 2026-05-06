@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brain, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
-import { reports } from '@/app/lib/data';
 import { useAuth } from '@/app/hooks/useAuth';
+import { useReports } from '@/app/hooks/useReports';
 import { PriorityBadge } from '@/app/components/ui/Badge';
+import { ErrorBanner } from '@/app/components/ui/ErrorBanner';
 
 interface ScoreBarProps {
   label: string;
@@ -31,20 +32,36 @@ function ScoreBar({ label, value, color, max = 10 }: ScoreBarProps) {
 
 export default function DecisionPage() {
   const router = useRouter();
-  const { can, isLoading } = useAuth();
+  const { can, isLoading: authLoading } = useAuth();
+  const { reports, isLoading, isUsingFallback, refresh } = useReports();
+
+  // Calculate scored reports from real data
+  const scoredReports = useMemo(() => {
+    return reports
+      .filter((r) => r.aiScore && r.aiScore > 0)
+      .sort((a, b) => (b.aiScore ?? 0) - (a.aiScore ?? 0))
+      .map((r) => ({
+        ...r,
+        score: {
+          total: r.aiScore ?? 0,
+          severity: r.severity ?? 0,
+          frequency: r.frequency ?? 0,
+          recency: r.recency ?? 0,
+          reason: r.scoreSource === 'ml-model' 
+            ? `Laporan ini diprioritaskan berdasarkan analisis ML Model dengan skor ${(r.aiScore ?? 0).toFixed(1)}/10. Faktor utama: severity ${(r.severity ?? 0).toFixed(1)}, frequency ${(r.frequency ?? 0).toFixed(1)}, recency ${(r.recency ?? 0).toFixed(1)}.`
+            : `Laporan ini dinilai menggunakan rule-based system dengan skor ${(r.aiScore ?? 0).toFixed(1)}/10 berdasarkan kategori dan status laporan.`,
+        },
+      }));
+  }, [reports]);
 
   useEffect(() => {
-    if (!isLoading && !can('viewDecisionInsight')) {
+    if (!authLoading && !can('viewDecisionInsight')) {
       router.replace('/dashboard');
     }
-  }, [isLoading, can, router]);
+  }, [authLoading, can, router]);
 
-  if (isLoading) return null;
+  if (authLoading) return null;
   if (!can('viewDecisionInsight')) return null;
-
-  const scoredReports = reports
-    .filter((r) => r.score)
-    .sort((a, b) => (b.score?.total ?? 0) - (a.score?.total ?? 0));
 
   return (
     <div className="h-full flex flex-col">
@@ -65,6 +82,8 @@ export default function DecisionPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-5">
+        {isUsingFallback && <ErrorBanner compact onRetry={refresh} />}
+
         {/* Methodology card */}
         <div
           className="card p-5 relative overflow-hidden"
@@ -121,8 +140,27 @@ export default function DecisionPage() {
 
         {/* Scored reports */}
         <div className="space-y-4">
-          <h3 className="text-sm font-bold text-text-primary">Rekomendasi Prioritas Penanganan</h3>
-          {scoredReports.map((report, index) => (
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-text-primary">Rekomendasi Prioritas Penanganan</h3>
+            <span className="text-xs text-text-tertiary">
+              {isLoading ? 'Memuat...' : `${scoredReports.length} laporan dengan skor AI`}
+            </span>
+          </div>
+          
+          {isLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="card p-5 h-48 animate-pulse bg-surface" />
+              ))}
+            </div>
+          ) : scoredReports.length === 0 ? (
+            <div className="card p-8 text-center">
+              <Brain size={32} className="text-text-tertiary mx-auto mb-3" />
+              <p className="text-sm text-text-secondary">Belum ada laporan dengan skor AI</p>
+              <p className="text-xs text-text-tertiary mt-1">Laporan akan muncul setelah diproses oleh sistem</p>
+            </div>
+          ) : (
+            scoredReports.map((report, index) => (
             <div
               key={report.id}
               className="card p-5 hover:shadow-apple-md transition-all duration-200 hover:-translate-y-0.5"
@@ -189,7 +227,8 @@ export default function DecisionPage() {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </div>
     </div>

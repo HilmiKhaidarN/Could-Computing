@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Zap, ArrowLeft, AlertCircle } from 'lucide-react';
-import { login, saveSession, type UserRole } from '@/app/lib/auth';
+import { saveSession, type UserRole } from '@/app/lib/auth';
+import { apiClient } from '@/app/lib/api';
 
 const ROLE_HINTS: Record<UserRole, { email: string; password: string }> = {
   admin: { email: 'admin@aegisops.id', password: 'admin123' },
@@ -33,17 +34,35 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 800)); // simulate network
-
-    const user = login(email, password);
-    if (!user) {
-      setError('Email atau password salah. Coba gunakan akun demo di bawah.');
+    try {
+      // Call backend API
+      const response = await apiClient.login({ email, password });
+      
+      // Map backend roles to frontend roles
+      const roleMap: Record<string, UserRole> = {
+        'admin': 'admin',
+        'analyst': 'supervisor',
+        'viewer': 'user',
+      };
+      
+      // Save session with user data from backend
+      const user = {
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        role: roleMap[response.user.role] || 'user',
+        token: response.accessToken,
+      };
+      
+      saveSession(user);
+      
+      // Force page reload to ensure session is loaded
+      window.location.href = '/dashboard';
+    } catch (err: any) {
+      setError(err.message || 'Email atau password salah. Coba gunakan akun demo di bawah.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    saveSession(user);
-    router.push('/dashboard');
   };
 
   return (
