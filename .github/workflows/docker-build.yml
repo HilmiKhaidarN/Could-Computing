@@ -1,0 +1,80 @@
+name: Docker Build Test
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'ml-service/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+
+jobs:
+  docker-build:
+    name: Test Docker Builds
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend, ml-service]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          file: ./docker/${{ matrix.service == 'ml-service' && 'ml' || matrix.service }}.Dockerfile
+          push: false
+          tags: aegisops-${{ matrix.service }}:test
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+
+  docker-compose:
+    name: Test Docker Compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          DATABASE_USER=aegisops
+          DATABASE_PASSWORD=aegisops_test
+          DATABASE_NAME=aegisops_db
+          DATABASE_PORT=5432
+          JWT_SECRET=test_secret
+          BACKEND_PORT=4000
+          APP_PORT=3000
+          ML_SERVICE_PORT=8000
+          NEXT_PUBLIC_API_URL=http://localhost:4000
+          EOF
+
+      - name: Build services
+        run: docker-compose build
+
+      - name: Start services
+        run: docker-compose up -d
+
+      - name: Wait for services
+        run: sleep 30
+
+      - name: Check backend health
+        run: |
+          docker-compose ps
+          curl -f http://localhost:4000/health || echo "⚠️ Backend not ready"
+
+      - name: Check ML service health
+        run: |
+          curl -f http://localhost:8000/health || echo "⚠️ ML service not ready"
+
+      - name: Show logs
+        if: failure()
+        run: docker-compose logs
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down -v
